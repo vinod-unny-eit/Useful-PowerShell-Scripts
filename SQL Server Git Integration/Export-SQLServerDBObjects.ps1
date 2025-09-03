@@ -49,10 +49,10 @@ if (-not $DatabaseName) {
     $result = $form.ShowDialog()
     if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         $DatabaseName = $dropdown.SelectedItem
-        Write-Host "✅ Selected database: $DatabaseName"
+        Write-Host "> Selected database: $DatabaseName" -ForegroundColor Green
     }
     else {
-        Write-Host "❌ No database selected. Exiting."
+        Write-Host "× No database selected. Exiting." -ForegroundColor Red
         exit
     }
 }
@@ -63,6 +63,11 @@ if (-not $CommitMessage) {
 	    "Commit Message",
 	    "Updated schema"
 	)
+
+    if ([string]::IsNullOrWhiteSpace($CommitMessage)) {
+        Write-Host "× Commit message is required. Exiting." -ForegroundColor Red
+        exit
+    }
 }
 
 # Load SqlServer module and SMO types
@@ -76,7 +81,7 @@ $server = New-Object Microsoft.SqlServer.Management.Smo.Server($ServerName)
 $database = $server.Databases[$DatabaseName]
 
 if (-not $database) {
-    Write-Error "❌ Database '$DatabaseName' not found on server '$ServerName'."
+    Write-Error "× Database '$DatabaseName' not found on server '$ServerName'." -ForegroundColor Red 
     return
 }
 
@@ -118,12 +123,14 @@ function Export-TablesWithDependencies {
                 $existingContent = ($existingLines -join "`r`n").Trim()
                 if ($existingContent -ne $script) {
                     Set-Content -Path $filePath -Value $script -Encoding UTF8
+                    Write-Host "> Updated $safeName" -ForegroundColor Green
                 }
                 else {
-                    Write-Host "No changes for $safeName, skipping write."
+                    Write-Host "× No changes for $safeName, skipping write."  -ForegroundColor Red
                 }
             } else {
                 Set-Content -Path $filePath -Value $script -Encoding UTF8
+                Write-Host "> Updated $safeName" -ForegroundColor Green
             }
         }
     }
@@ -154,13 +161,16 @@ function Export-DbObjects {
                 $existingContent = ($existingLines -join "`r`n").Trim()
                 if ($existingContent -ne $script) {
                     Set-Content -Path $filePath -Value $script -Encoding UTF8
+                    Write-Host "> Updated $safeName" -ForegroundColor Green
                 }
                 else {
-                    Write-Host "No changes for $safeName, skipping write."
+                    Write-Host "× No changes for $safeName, skipping write." -ForegroundColor Red
                 }
             } else {
                 Set-Content -Path $filePath -Value $script -Encoding UTF8
-            }        }
+                Write-Host "> Updated $safeName" -ForegroundColor Green
+            }
+        }
     }
 }
 
@@ -172,13 +182,21 @@ Export-DbObjects $database.UserDefinedFunctions "Functions"
 Export-DbObjects $database.Triggers             "Triggers"
 Export-DbObjects $database.Schemas              "Schemas"
 
-
-Write-Host "✅ Export complete. Files saved to $OutputRoot"
+Write-Host "> Export complete. Files saved to $OutputRoot" -ForegroundColor Green
 
 # Commit changes to Git
 Set-Location $OutputRoot
 git add .
-git commit -m $CommitMessage
-git push
 
-Write-Host "✅ Changes committed to Git with message: '$CommitMessage'"
+# Check if there are any changes to commit
+$changes = git diff --cached --name-only
+if ($changes) {
+    git commit -m $CommitMessage
+    git push
+    Write-Host "> Changes committed to Git with message: '$CommitMessage'" -ForegroundColor Green
+} 
+else {
+    Write-Host "× No changes to commit." -ForegroundColor Yellow
+}
+
+Write-Host "> All done!" -ForegroundColor Green
