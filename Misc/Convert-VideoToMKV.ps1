@@ -30,6 +30,7 @@
     Rule restrictions:
     - Source folder + Destination file → ❌ Not allowed.
     - All other combinations are valid.
+    Ensure that ffmpeg is installed and its path is correctly set in the script.
 #>
 
 [CmdletBinding()]
