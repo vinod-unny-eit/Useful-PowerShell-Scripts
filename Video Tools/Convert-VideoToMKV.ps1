@@ -40,32 +40,23 @@ param(
     [Alias("?", "h")]
     [switch]$Help
 )
-
-function Show-Help {
-    # Read the script file and print only the help block
-    $lines = Get-Content $PSCommandPath
-    $inHelp = $false
-    foreach ($line in $lines) {
-        if ($line -match '^<#$') { $inHelp = $true; continue }
-        if ($line -match '^#>$') { $inHelp = $false; break }
-        if ($inHelp) { Write-Host $line -ForegroundColor Cyan }
-    }
-}
+Import-Module "$PSScriptRoot\VideoToolsCommon.psm1"
 
 # If help requested or parameters missing, show help
 if ($Help -or -not $Source -or -not $Destination) {
-    Show-Help
+    Show-Help -ScriptPath $PSCommandPath
     exit
 }
 
 # If help requested or parameters missing, show help
 if ($Help -or $PSBoundParameters.ContainsKey('?') -or -not $Source -or -not $Destination) {
-    Show-Help
+    Show-Help -ScriptPath $PSCommandPath
     exit
 }
 
 # Path to FFmpeg bin folder
-$FFmpegBin = "D:\Portable\ffmpeg\bin"
+$Tools = Initialize-VideoTools
+$FFmpegBin = $Tools.FFmpegBin
 $FFmpegExe = Join-Path $FFmpegBin "ffmpeg.exe"
 $FFprobeExe = Join-Path $FFmpegBin "ffprobe.exe"
 $progressFile = "$env:TEMP\progress.txt"

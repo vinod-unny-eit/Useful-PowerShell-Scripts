@@ -33,10 +33,9 @@
     - Ensure that ffmpeg and yt-dlp are installed and their paths are correctly set in the script.
 #>
 
-
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter()]
     [string]$URL,
 
     [Parameter()]
@@ -52,33 +51,18 @@ param(
     [Alias("?", "h")]
     [switch]$Help
 )
+Import-Module "$PSScriptRoot\VideoToolsCommon.psm1"
 
-function Show-Help {
-    # Read the script file and print only the help block
-    $lines = Get-Content $PSCommandPath
-    $inHelp = $false
-    foreach ($line in $lines) {
-        if ($line -match '^<#$') { $inHelp = $true; continue }
-        if ($line -match '^#>$') { $inHelp = $false; break }
-        if ($inHelp) { Write-Host $line -ForegroundColor Cyan }
-    }
-}
-
-# If help requested or parameters missing, show help
-if ($Help -or -not $URL) {
-    Show-Help
+# If help is requested or required parameters are missing, show help
+if ($Help -or -not $URL -or $PSBoundParameters.ContainsKey('?')) {
+    Show-Help -ScriptPath $PSCommandPath
     exit
 }
 
-# If help requested or parameters missing, show help
-if ($Help -or $PSBoundParameters.ContainsKey('?')) {
-    Show-Help
-    exit
-}
-
-$FFmpegBin = "D:\Portable\ffmpeg\bin"
+$Tools = Initialize-VideoTools
+$FFmpegBin = $Tools.FFmpegBin
 $FFmpegExe = Join-Path $FFmpegBin "ffmpeg.exe"
-$YTDownloaderExe = "D:\Portable\yt-dlp\yt-dlp.exe"
+$YTDownloaderExe = Join-Path $Tools.YtDlpBin "yt-dlp.exe"
 $Destination = if ($Destination) { $Destination } else { Get-Location }
 $destIsFile = $Destination.EndsWith("mkv")
 
@@ -123,11 +107,11 @@ if ($selectedFormats) {
     # Download the formats and merge them
     if($StartTime -ne $null -and $StartTime -ne "") {
 	    Write-Host "Attempting to download CLIP between $startTime and $EndTime and merge formats..."
-	    $output = & "$YTDownloaderExe" --ffmpeg-location $FFmpegBin --no-warnings -q --print after_move:filepath --download-sections "*$StartTime-$EndTime" -f "$SelectedIDs" --merge-output-format mkv --recode-video mkv --postprocessor-args "ffmpeg:-c:v hevc_nvenc -preset fast -b:v 5M -c:a copy" -o $Outfile $URL
+	    $output = & "$YTDownloaderExe" --ffmpeg-location $FFmpegBin --no-warnings -q --print after_move:filepath --cookies $PSScriptRoot'\YTCookies.txt'     --download-sections "*$StartTime-$EndTime" -f "$SelectedIDs" --merge-output-format mkv --recode-video mkv --postprocessor-args "ffmpeg:-c:v hevc_nvenc -preset fast -b:v 5M -c:a copy" -o $Outfile $URL
     }
     else {
 	    Write-Host "Attempting to download and merge formats..."
-	    $output = & "$YTDownloaderExe" --ffmpeg-location $FFmpegBin --no-warnings -q --print after_move:filepath -f "$SelectedIDs" --merge-output-format mkv --recode-video mkv --postprocessor-args "ffmpeg:-c:v hevc_nvenc -preset fast -b:v 5M -c:a copy" -o $Outfile $URL
+	    $output = & "$YTDownloaderExe" --ffmpeg-location $FFmpegBin --no-warnings -q --print after_move:filepath --cookies $PSScriptRoot'\YTCookies.txt' -f "$SelectedIDs" --merge-output-format mkv --recode-video mkv --postprocessor-args "ffmpeg:-c:v hevc_nvenc -preset fast -b:v 5M -c:a copy" -o $Outfile $URL
     }
 
     # Display the full path to the downloaded video file

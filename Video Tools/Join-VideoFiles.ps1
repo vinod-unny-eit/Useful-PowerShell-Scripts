@@ -44,29 +44,18 @@ param(
     [Alias("?", "h")]
     [switch]$Help
 )
-
-function Show-Help {
-    # Display the comment-based help block without requiring a separate
-    # documentation file or duplicating the usage text in the script body.
-    $lines = Get-Content $PSCommandPath
-    $inHelp = $false
-    foreach ($line in $lines) {
-        if ($line -match '^<#$') { $inHelp = $true; continue }
-        if ($line -match '^#>$') { $inHelp = $false; break }
-        if ($inHelp) { Write-Host $line -ForegroundColor Cyan }
-    }
-}
-
+Import-Module "$PSScriptRoot\VideoToolsCommon.psm1"
 if ($Help -or -not $Source -or -not $Destination) {
     # Showing help for incomplete input makes the script easier to discover
     # interactively and avoids running FFmpeg with missing paths.
-    Show-Help
+    Show-Help -ScriptPath $PSCommandPath
     exit 0
 }
 
 # Keep the FFmpeg tools together so the script can use a portable installation
 # and so ffmpeg and ffprobe are guaranteed to come from the same distribution.
-$FFmpegBin = "D:\Portable\ffmpeg\bin"
+$Tools = Initialize-VideoTools
+$FFmpegBin = $Tools.FFmpegBin
 $FFmpegExe = Join-Path $FFmpegBin "ffmpeg.exe"
 $FFprobeExe = Join-Path $FFmpegBin "ffprobe.exe"
 $videoExtensions = @(".mp4", ".m4v", ".mkv", ".avi", ".mov", ".wmv", ".ts", ".webm", ".m2ts")
