@@ -107,6 +107,8 @@ if ($destIsFolder -and -not (Test-Path $destFolder)) {
 
 # Get all video files
 #$files = Get-ChildItem -Path $SourceFolder\* -Include *.mp4, *.avi, *.mov, *.wmv, *.ts, *.webm -File
+$filesCount = $files.Count
+$currentIndex = 0
 
 foreach ($file in $files) {
     if ($destIsFolder) {
@@ -149,7 +151,7 @@ foreach ($file in $files) {
             if ($outTimeLine) {
                 $rawCurrent = $outTimeLine.Split("=")[1]
                 $current_ms = 0
-		$current_s = [TimeSpan]::Parse($rawCurrent).TotalSeconds	# Get time in seconds
+		        $current_s = [TimeSpan]::Parse($rawCurrent).TotalSeconds	# Get time in seconds
 
                 # Clamp current time
                 if ($current_s -gt $duration) { $current_s = $duration }
@@ -177,13 +179,15 @@ foreach ($file in $files) {
                 $etaSpan = [TimeSpan]::FromSeconds($eta)
                 $etaFormatted = "{0:mm\:ss}" -f $etaSpan
 
-		# Colored output
-		Write-Host $file.Name -ForegroundColor Cyan -NoNewline
-		Write-Host " | " -NoNewline
-		Write-Host ("{0}%" -f $percent) -ForegroundColor Magenta -NoNewline
-		Write-Host " | " -NoNewline
-		Write-Host ("ETA: {0}" -f $etaFormatted) -ForegroundColor Yellow -NoNewline
-		Write-Host "`r" -NoNewline
+                # Colored output
+                Write-Host ("({0}/{1})" -f ($currentIndex + 1), $filesCount) -ForegroundColor Green -NoNewline
+                Write-Host " | " -NoNewline
+                Write-Host $file.Name.substring(0, [Math]::Min(80, $file.Name.Length)) -ForegroundColor Cyan -NoNewline
+                Write-Host "... | " -NoNewline
+                Write-Host ("{0}%" -f $percent) -ForegroundColor Magenta -NoNewline
+                Write-Host " | " -NoNewline
+                Write-Host ("ETA: {0}" -f $etaFormatted) -ForegroundColor Yellow -NoNewline
+                Write-Host "`r" -NoNewline
 
             }
         }
@@ -195,5 +199,6 @@ foreach ($file in $files) {
     $elapsedFormatted = "{0:hh\:mm\:ss}" -f $elapsed
 
     # Final line after completion
-    Write-Host -ForegroundColor Green ("{0} | 100% | Completed in $elapsedFormatted" -f $file.Name)
+    Write-Host -ForegroundColor Green ("({0}/{1}) | {2} | 100% | Completed in $elapsedFormatted" -f ($currentIndex + 1), $filesCount, $file.Name.substring(0, [Math]::Min(80, $file.Name.Length)))
+    $currentIndex++
 }

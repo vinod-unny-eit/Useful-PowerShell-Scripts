@@ -21,10 +21,11 @@
     - If a folder, the output is saved as CombinedVideo.mkv inside it.
     - If a file, it must have a .mkv extension and is saved to that exact path.
 
-.EXAMPLES
+.EXAMPLE
     Combine all supported videos in a folder:
         .\Join-VideoFiles.ps1 -Source "C:\Videos" -Destination "D:\Output"
 
+.EXAMPLE
     Combine files selected by a wildcard:
         .\Join-VideoFiles.ps1 -Source "C:\Videos\Part-*.mp4" -Destination "D:\Output\FullVideo.mkv"
 
